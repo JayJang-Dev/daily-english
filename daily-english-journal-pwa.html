@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DEJ">
+<meta name="theme-color" content="#FAF7F2">
+<title>Daily English Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+:root{
+  --cream:#FAF7F2;--cream2:#F0EBE3;--cream3:#E8E0D6;
+  --white:#FFFFFF;--ink:#1C1917;--ink2:#44403C;--ink3:#78716C;--ink4:#A8A29E;
+  --sage:#3D6B4A;--sage2:#4A7A5A;--sage-l:#EBF4EF;--sage-m:#C0DECA;
+  --blue:#2F5FC4;--blue-l:#EBF0FC;--blue-m:#B8CCF4;
+  --red:#C0392B;--red-l:#FBEAE8;--red-m:#F4C0BA;
+  --purple:#6344A8;--purple-l:#F0EBF9;--purple-m:#CFBFF0;
+  --amber:#B8742A;--amber-l:#FDF3E7;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.04);
+  --sh:0 2px 16px rgba(0,0,0,0.06),0 0 0 0.5px rgba(0,0,0,0.05);
+  --sh2:0 8px 32px rgba(0,0,0,0.12),0 0 0 0.5px rgba(0,0,0,0.06);
+  --r:16px;--rs:10px;--rxs:8px;
+  --fd:'Lora',serif;--fu:'Plus Jakarta Sans',sans-serif;
+  /* iPhone safe areas */
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--cream);
+  font-family: var(--fu);
+}
+
+/* ── App Shell: full screen ── */
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+  /* Push content below notch/status bar */
+  padding-top: var(--safe-top);
+}
+
+/* ── Screens ── */
+.screens { flex: 1; overflow: hidden; position: relative; }
+.screen {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  opacity: 0; transform: translateY(10px);
+  pointer-events: none;
+  transition: opacity .22s ease, transform .22s ease;
+}
+.screen.active { opacity: 1; transform: translateY(0); pointer-events: all; }
+
+.scroll {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── Tab Bar (respects home indicator) ── */
+.tabbar {
+  background: rgba(250,247,242,.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: .5px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 10px;
+  /* Add space for home indicator */
+  padding-bottom: var(--safe-bottom);
+  flex-shrink: 0;
+}
+.tab {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px; cursor: pointer;
+  padding: 4px 0; opacity: .38; transition: opacity .18s;
+}
+.tab.on { opacity: 1; }
+.tab svg { width: 24px; height: 24px; }
+.tab-lbl { font-size: 10px; font-weight: 700; color: var(--ink3); }
+.tab.on .tab-lbl { color: var(--sage); }
+.tab.on .ti { fill: var(--sage) !important; }
+
+/* ── Shared ── */
+.tag { display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;line-height:1.4 }
+.tb{background:var(--blue-l);color:var(--blue)} .tr{background:var(--red-l);color:var(--red)}
+.tg{background:var(--sage-l);color:var(--sage)} .tp{background:var(--purple-l);color:var(--purple)}
+.sec-row{padding:0 16px;display:flex;justify-content:space-between;align-items:center}
+.sec-ttl{font-size:11px;font-weight:700;color:var(--ink4);letter-spacing:.07em;text-transform:uppercase}
+.sec-lnk{font-size:12px;font-weight:700;color:var(--sage)}
+
+/* ── Toast ── */
+.toast {
+  position: fixed; bottom: calc(var(--safe-bottom) + 90px);
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: #1C1917; color: #fff; padding: 10px 20px;
+  border-radius: 30px; font-size: 13px; font-weight: 600;
+  z-index: 999; opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════
+   JOURNAL SCREEN
+═══════════════ */
+.screen-header {
+  padding: 12px 16px 10px;
+  border-bottom: .5px solid var(--border);
+  background: var(--cream);
+  flex-shrink: 0;
+}
+.screen-title { font-family: var(--fd); font-size: 22px; font-weight: 600; color: var(--ink); }
+.screen-sub { font-size: 13px; color: var(--ink3); margin-top: 1px; }
+
+.hero {
+  margin: 12px 16px 0;
+  background: linear-gradient(138deg,#2E5240 0%,#3D6B4A 60%,#4A8058 100%);
+  border-radius: var(--r); padding: 18px; position: relative; overflow: hidden;
+}
+.hero::before{content:'';position:absolute;right:-24px;top:-24px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.05)}
+.hero-date{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:2px;letter-spacing:.04em;text-transform:uppercase}
+.hero-theme{font-family:var(--fd);font-size:18px;font-weight:600;color:#fff;line-height:1.3;margin-bottom:12px}
+.hero-theme small{display:block;font-family:var(--fu);font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px;font-style:normal}
+.hero-stats{display:flex;gap:8px}
+.hs{flex:1;background:rgba(255,255,255,.1);border-radius:var(--rxs);padding:9px 6px;text-align:center}
+.hs-n{font-size:20px;font-weight:800;color:#fff;line-height:1}
+.hs-l{font-size:10px;color:rgba(255,255,255,.55);margin-top:2px;font-weight:600}
+
+.tip-bar{margin:10px 16px 0;background:linear-gradient(90deg,var(--amber-l),#FEF9F0);border-radius:var(--rs);border:.5px solid rgba(184,116,42,.15);padding:10px 13px;display:flex;gap:9px;align-items:flex-start}
+.tip-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.tip-text{font-size:12px;color:var(--ink2);line-height:1.5;font-weight:500}
+.tip-text strong{color:var(--amber);font-weight:700}
+
+.goal-strip{margin:10px 16px 0;background:var(--white);border-radius:var(--rs);border:.5px solid var(--border);padding:10px 13px;display:flex;align-items:center;gap:10px}
+.goal-lbl{font-size:12px;color:var(--ink3);font-weight:600;flex:1}
+.goal-bar{flex:2;height:5px;background:var(--cream2);border-radius:3px;overflow:hidden}
+.goal-fill{height:100%;background:linear-gradient(90deg,var(--sage),#5C9B70);border-radius:3px;transition:width .6s ease}
+.goal-pct{font-size:12px;font-weight:800;color:var(--sage);min-width:28px;text-align:right}
+
+.expr-card{background:var(--white);border-radius:var(--r);border:.5px solid var(--border);box-shadow:var(--sh);padding:14px 15px}
+.expr-card+.expr-card{margin-top:9px}
+.expr-word{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.expr-meaning{font-size:12px;color:var(--ink3);margin-bottom:8px;line-height:1.45}
+.expr-eg{background:var(--cream);border-radius:var(--rxs);padding:8px 10px;font-size:12px;color:var(--ink2);line-height:1.5;font-style:italic;margin-bottom:8px}
+.expr-eg mark{background:none;font-style:normal;font-weight:700;color:var(--ink)}
+.expr-tags{display:flex;flex-wrap:wrap;gap:5px}
+.empty-state{margin:24px 16px;text-align:center;padding:28px 16px;background:var(--white);border-radius:var(--r);border:.5px solid var(--border)}
+.empty-icon{font-size:34px;margin-bottom:10px}
+.empty-title{font-family:var(--fd);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--ink3);line-height:1.5;margin-bottom:14px}
+.empty-btn{background:var(--sage);color:#fff;border:none;padding:11px 22px;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fu)}
+
+/* rec cards */
+.rec-card{margin:0 16px 8px;border-radius:var(--r);border:.5px solid var(--border);overflow:hidden;box-shadow:var(--sh)}
+.rec-head{padding:12px 13px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:var(--white)}
+.rec-icon-ttl{display:flex;align-items:center;gap:8px}
+.rec-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.rec-ttl{font-size:13px;font-weight:700;color:var(--ink)}
+.rec-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.rec-chevron{font-size:16px;color:var(--ink4);transition:transform .25s;font-weight:300}
+.rec-body{max-height:0;overflow:hidden;transition:max-height .35s ease;background:var(--white)}
+.rec-body.open{max-height:400px}
+.rec-content{padding:0 13px 13px;border-top:.5px solid var(--border2)}
+.rec-item{display:flex;gap:8px;padding:6px 0;border-bottom:.5px solid var(--border2)}
+.rec-item:last-child{border-bottom:none}
+.rec-item-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.rec-item-text{font-size:12px;color:var(--ink2);line-height:1.5}
+.rec-item-text strong{color:var(--ink);font-weight:700}
+
+/* ═══════════════
+   ADD SCREEN
+═══════════════ */
+.add-header{padding:12px 16px 10px;border-bottom:.5px solid var(--border);background:var(--cream);flex-shrink:0}
+.add-hrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.add-title{font-family:var(--fd);font-size:20px;font-weight:600;color:var(--ink)}
+.save-btn{background:var(--sage);color:#fff;border:none;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fu);opacity:0;pointer-events:none;transition:opacity .2s}
+.save-btn.visible{opacity:1;pointer-events:all}
+.step-track{display:flex;gap:6px;align-items:center}
+.step-dot{width:7px;height:7px;border-radius:50%;background:var(--cream3);transition:all .25s}
+.step-dot.done{background:var(--sage)}
+.step-dot.cur{background:var(--ink2);width:18px;border-radius:4px}
+.step-label{font-size:11px;font-weight:700;color:var(--ink4);letter-spacing:.05em;text-transform:uppercase;margin-left:6px}
+
+.of-banner{margin:10px 16px 0;background:linear-gradient(90deg,var(--purple-l),#F5F0FD);border-radius:var(--rs);border:.5px solid rgba(99,68,168,.15);padding:10px 13px;display:flex;gap:9px;align-items:flex-start}
+.of-badge{background:var(--purple);color:#fff;font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;letter-spacing:.04em;flex-shrink:0;margin-top:1px}
+.of-text{font-size:12px;color:var(--purple);line-height:1.5;font-weight:600}
+
+.step-panel{display:none;padding:14px 16px}
+.step-panel.cur{display:block}
+.step-title{font-family:var(--fd);font-size:16px;font-weight:600;color:var(--ink);margin-bottom:3px}
+.step-sub{font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.4}
+.fl{margin-bottom:13px}
+.fl-lbl{font-size:10px;font-weight:800;color:var(--ink4);letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.fl-dot{width:5px;height:5px;border-radius:50%}
+.fi{width:100%;background:var(--cream);border:1px solid var(--cream3);border-radius:var(--rxs);padding:11px 13px;font-size:16px;color:var(--ink);font-family:var(--fu);outline:none;resize:none;line-height:1.5;transition:border-color .15s;-webkit-appearance:none}
+.fi:focus{border-color:var(--sage2);background:var(--white)}
+.fi::placeholder{color:var(--ink4)}
+.fi-sm{font-size:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.step-nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:14px;border-top:.5px solid var(--border2)}
+.step-btn{padding:12px 24px;border-radius:24px;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--fu);border:none}
+.step-prev{background:var(--cream2);color:var(--ink3)}
+.step-next{background:var(--sage);color:#fff}
+
+.ipa-disp{background:var(--cream);border:1px solid var(--cream3);border-radius:var(--rxs);padding:14px;font-size:24px;text-align:center;font-family:serif;color:var(--ink);min-height:56px;margin-bottom:10px;letter-spacing:3px}
+.ipa-kb{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ipa-k{padding:10px 12px;background:var(--white);border:1px solid var(--border);border-radius:var(--rxs);font-size:17px;color:var(--blue);font-weight:700;cursor:pointer;min-width:42px;text-align:center;font-family:serif;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ipa-k:active{background:var(--blue-l);transform:scale(.93)}
+.ipa-acts{display:flex;gap:8px}
+.ipa-act{padding:10px 16px;border-radius:var(--rxs);border:1px solid var(--border);background:var(--white);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--fu);color:var(--ink3)}
+.ipa-act.prim{background:var(--blue);color:#fff;border-color:var(--blue)}
+.of-challenge{background:var(--purple-l);border:.5px solid rgba(99,68,168,.18);border-radius:var(--rs);padding:12px 13px;margin-bottom:13px}
+.of-challenge-lbl{font-size:10px;font-weight:800;color:var(--purple);letter-spacing:.07em;text-transform:uppercase;margin-bottom:5px}
+.of-challenge-q{font-size:13px;color:var(--purple);line-height:1.5;font-weight:600;font-style:italic}
+
+/* ═══════════════
+   REVIEW SCREEN
+═══════════════ */
+.review-hd{padding:12px 16px 0;flex-shrink:0}
+.review-hd-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.review-hd-title{font-family:var(--fd);font-size:20px;font-weight:600;color:var(--ink)}
+.review-date-badge{font-size:12px;font-weight:700;color:var(--ink3);background:var(--cream2);padding:5px 12px;border-radius:20px}
+.rev-prog-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.rev-prog-lbl{font-size:12px;font-weight:700;color:var(--ink3);min-width:32px}
+.rev-prog-track{flex:1;height:4px;background:var(--cream2);border-radius:2px}
+.rev-prog-fill{height:100%;background:linear-gradient(90deg,var(--sage),#5C9B70);border-radius:2px;transition:width .4s ease}
+.rev-dots{display:flex;gap:5px;justify-content:center;margin-bottom:8px}
+.rd{width:7px;height:7px;border-radius:50%;background:var(--cream3);transition:all .25s}
+.rd.done{background:var(--sage)} .rd.cur{background:var(--ink2);width:18px;border-radius:4px}
+
+.flip-area{margin:0 16px;perspective:1000px}
+.flip-card{position:relative;width:100%;cursor:pointer}
+.flip-inner{position:relative;width:100%;min-height:260px;transition:transform .55s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d}
+.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--white);border-radius:20px;border:.5px solid var(--border);box-shadow:var(--sh2);padding:22px 20px;display:flex;flex-direction:column;min-height:260px}
+.flip-back{transform:rotateY(180deg)}
+.flip-tag{font-size:10px;font-weight:800;color:var(--sage);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px}
+.flip-word{font-family:var(--fd);font-size:26px;font-weight:600;color:var(--ink);margin-bottom:4px;line-height:1.2}
+.flip-phon{font-size:14px;color:var(--blue);font-family:serif;margin-bottom:auto}
+.flip-hint{font-size:11px;color:var(--ink4);margin-top:12px;text-align:center}
+.flip-sect-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink4);margin-bottom:3px}
+.flip-meaning{font-size:14px;color:var(--ink2);line-height:1.5;margin-bottom:9px}
+.flip-ctx{background:var(--cream);border-radius:var(--rxs);padding:8px 10px;font-size:12px;color:var(--ink3);line-height:1.5;margin-bottom:9px}
+.flip-ctx strong{color:var(--ink2);font-weight:600}
+.flip-own{background:var(--purple-l);border-radius:var(--rxs);padding:8px 10px;font-size:12px;color:var(--purple);line-height:1.5;font-style:italic}
+.flip-own-lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--purple);margin-bottom:3px;font-style:normal}
+
+.srs-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 16px 0}
+.srs-btn{padding:13px 6px;border-radius:var(--rs);border:1px solid var(--border);text-align:center;cursor:pointer;transition:transform .1s}
+.srs-btn:active{transform:scale(.95)}
+.srs-hard{background:var(--red-l);border-color:var(--red-m)}
+.srs-ok{background:var(--amber-l);border-color:#F0D0A0}
+.srs-easy{background:var(--sage-l);border-color:var(--sage-m)}
+.srs-emoji{font-size:22px;margin-bottom:2px}
+.srs-lbl{font-size:13px;font-weight:800}
+.srs-hard .srs-lbl{color:var(--red)} .srs-ok .srs-lbl{color:var(--amber)} .srs-easy .srs-lbl{color:var(--sage)}
+.srs-sub{font-size:10px;color:var(--ink4);margin-top:2px;font-weight:600}
+.srs-insight{margin:10px 16px 0;background:var(--blue-l);border-radius:var(--rs);border:.5px solid rgba(47,95,196,.12);padding:10px 13px;font-size:12px;color:var(--blue);font-weight:600;line-height:1.5}
+.srs-insight strong{font-weight:800}
+
+.q-card{background:var(--white);border:.5px solid var(--border);border-radius:var(--rs);padding:11px 13px;display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.q-num{width:24px;height:24px;border-radius:50%;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink3);flex-shrink:0}
+.q-word{font-size:13px;font-weight:700;color:var(--ink);flex:1}
+.q-due{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px}
+.qd-now{background:var(--red-l);color:var(--red)} .qd-later{background:var(--amber-l);color:var(--amber)} .qd-ok{background:var(--sage-l);color:var(--sage)}
+
+/* ═══════════════
+   MATRIX SCREEN
+═══════════════ */
+.mx-header{padding:12px 16px 10px;border-bottom:.5px solid var(--border);background:var(--cream);flex-shrink:0}
+.mx-title{font-family:var(--fd);font-size:20px;font-weight:600;color:var(--ink);margin-bottom:2px}
+.mx-sub{font-size:12px;color:var(--ink3)}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 16px 0}
+.kpi{background:var(--white);border-radius:var(--rs);border:.5px solid var(--border);padding:11px 6px;text-align:center;box-shadow:var(--sh)}
+.kpi-n{font-size:19px;font-weight:800;color:var(--ink);line-height:1;margin-bottom:2px}
+.kpi-l{font-size:9px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.04em}
+.kpi.ks .kpi-n{color:var(--sage)} .kpi.kb .kpi-n{color:var(--blue)}
+.kpi.kp .kpi-n{color:var(--purple)} .kpi.ka .kpi-n{color:var(--amber)}
+.filter-row{display:flex;gap:6px;padding:10px 16px 0;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
+.fc{padding:6px 13px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;background:var(--white);border:.5px solid var(--border);color:var(--ink3);flex-shrink:0}
+.fc.on{background:var(--sage);color:#fff;border-color:var(--sage)}
+.mx-table-wrap{margin:10px 16px 0;background:var(--white);border-radius:var(--r);border:.5px solid var(--border);box-shadow:var(--sh);overflow:hidden}
+.mx-table{width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed}
+.mx-table th{background:var(--cream2);padding:9px 10px;text-align:left;font-weight:800;color:var(--ink3);font-size:9px;letter-spacing:.06em;text-transform:uppercase;border-bottom:.5px solid var(--border)}
+.mx-table td{padding:10px 10px;border-bottom:.5px solid var(--border2);color:var(--ink2);vertical-align:middle}
+.mx-table tr:last-child td{border-bottom:none}
+.mx-date{font-weight:800;color:var(--ink);font-size:11px}
+.mx-today{font-size:9px;color:var(--sage);font-weight:700}
+.mx-theme{color:var(--ink2);font-size:11px}
+.mx-count{font-weight:800;color:var(--sage);font-size:13px}
+.rs{display:inline-flex;align-items:center;padding:3px 7px;border-radius:20px;font-size:9px;font-weight:800}
+.rs-done{background:var(--sage-l);color:var(--sage)} .rs-pend{background:var(--amber-l);color:var(--amber)} .rs-new{background:var(--blue-l);color:var(--blue)}
+.heat{margin:12px 16px}
+.heat-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:7px}
+.heat-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.hc{height:16px;border-radius:3px;background:var(--cream2)}
+.hc.h1{background:#C0DECA} .hc.h2{background:#7FC2A0} .hc.h3{background:#4A7A5A} .hc.h4{background:#2E5240}
+.heat-lbls{display:flex;justify-content:space-between;margin-top:4px}
+.heat-lbl{font-size:9px;color:var(--ink4);font-weight:600}
+.an-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 16px 0}
+.an-card{background:var(--white);border-radius:var(--rs);border:.5px solid var(--border);padding:13px}
+.an-ttl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink4);margin-bottom:8px}
+.minibars{display:flex;gap:3px;align-items:flex-end;height:38px}
+.mb{flex:1;border-radius:3px 3px 0 0;background:var(--sage-m);min-height:3px}
+.mb.today{background:var(--sage)}
+.streak-n{font-size:26px;font-weight:800;color:var(--amber);line-height:1}
+.streak-l{font-size:11px;color:var(--ink3);font-weight:600;margin-top:2px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ SCREENS ══ -->
+  <div class="screens">
+
+    <!-- JOURNAL -->
+    <div class="screen active" id="s-journal">
+      <div class="screen-header">
+        <div class="screen-title">Daily English Journal</div>
+        <div class="screen-sub" id="journal-date-sub">Today · Apr 13, 2026</div>
+      </div>
+      <div class="scroll">
+        <div class="hero">
+          <div class="hero-date" id="hero-date"></div>
+          <div class="hero-theme">
+            <small>Today's Theme</small>
+            <span id="hero-theme-val">Resume &amp; Interview English</span>
+          </div>
+          <div class="hero-stats">
+            <div class="hs"><div class="hs-n" id="stat-expr">0</div><div class="hs-l">Today</div></div>
+            <div class="hs"><div class="hs-n" id="stat-streak">0</div><div class="hs-l">Streak</div></div>
+            <div class="hs"><div class="hs-n" id="stat-total">0</div><div class="hs-l">Total</div></div>
+          </div>
+        </div>
+        <div class="tip-bar">
+          <div class="tip-icon">💡</div>
+          <div class="tip-text" id="daily-tip"><strong>Output First:</strong> 표현을 보기 전에 먼저 문장을 써보세요. 기억 효율이 2.5배 높아집니다.</div>
+        </div>
+        <div class="goal-strip">
+          <div class="goal-lbl">오늘 목표 · 5 expressions</div>
+          <div class="goal-bar"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+          <div class="goal-pct" id="goal-pct">0/5</div>
+        </div>
+        <div style="margin:14px 0 0">
+          <div class="sec-row"><div class="sec-ttl">Today's Expressions</div><div class="sec-lnk" onclick="goTab('matrix')">All →</div></div>
+          <div style="padding:10px 16px 0" id="expr-list"></div>
+        </div>
+        <div style="margin:18px 0 0">
+          <div class="sec-row" style="margin-bottom:10px"><div class="sec-ttl">학습 효율 추천</div></div>
+          <div class="rec-card">
+            <div class="rec-head" onclick="toggleRec(this)">
+              <div class="rec-icon-ttl"><div class="rec-icon" style="background:#EBF0FC">🧠</div><div><div class="rec-ttl">Output First 학습법</div><div class="rec-sub">쓰기 전 떠올리기 → 기억 2.5배</div></div></div>
+              <div class="rec-chevron">›</div>
+            </div>
+            <div class="rec-body"><div class="rec-content">
+              <div class="rec-item"><div class="rec-item-icon">1️⃣</div><div class="rec-item-text">표현을 보기 <strong>전에</strong>, 이 표현으로 내 문장을 먼저 쓴다</div></div>
+              <div class="rec-item"><div class="rec-item-icon">2️⃣</div><div class="rec-item-text">그 뒤 예문과 비교하며 갭을 확인한다 (메타인지)</div></div>
+              <div class="rec-item"><div class="rec-item-icon">3️⃣</div><div class="rec-item-text">Add 탭 Step 3에서 자동으로 적용됩니다</div></div>
+            </div></div>
+          </div>
+          <div class="rec-card">
+            <div class="rec-head" onclick="toggleRec(this)">
+              <div class="rec-icon-ttl"><div class="rec-icon" style="background:#EBF4EF">🔁</div><div><div class="rec-ttl">스페이스드 리피티션 (SRS)</div><div class="rec-sub">복습 타이밍이 장기 기억을 결정함</div></div></div>
+              <div class="rec-chevron">›</div>
+            </div>
+            <div class="rec-body"><div class="rec-content">
+              <div class="rec-item"><div class="rec-item-icon">📅</div><div class="rec-item-text">Easy → <strong>7일 후</strong> / Good → <strong>3일 후</strong> / Hard → <strong>내일</strong></div></div>
+              <div class="rec-item"><div class="rec-item-icon">⚠️</div><div class="rec-item-text">새 표현보다 <strong>Due된 복습을 먼저</strong> 하는 습관이 핵심</div></div>
+            </div></div>
+          </div>
+          <div class="rec-card">
+            <div class="rec-head" onclick="toggleRec(this)">
+              <div class="rec-icon-ttl"><div class="rec-icon" style="background:#F0EBF9">✏️</div><div><div class="rec-ttl">My Sentence가 핵심</div><div class="rec-sub">내 삶과 연결된 문장이 기억에 남는다</div></div></div>
+              <div class="rec-chevron">›</div>
+            </div>
+            <div class="rec-body"><div class="rec-content">
+              <div class="rec-item"><div class="rec-item-icon">❌</div><div class="rec-item-text"><strong>나쁜 예:</strong> "She leverages her strengths." (남 이야기)</div></div>
+              <div class="rec-item"><div class="rec-item-icon">✅</div><div class="rec-item-text"><strong>좋은 예:</strong> "I want to leverage my coding skills at internships." (내 현실)</div></div>
+            </div></div>
+          </div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab on" onclick="goTab('journal')"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" class="ti" fill="#3D6B4A"/><rect x="7" y="8" width="10" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="11.5" width="7" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="15" width="8.5" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl" style="color:var(--sage)">Journal</span></div>
+        <div class="tab" onclick="goTab('add')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" class="ti" fill="#78716C"/><rect x="11.25" y="7" width="1.5" height="10" rx=".75" fill="#fff"/><rect x="7" y="11.25" width="10" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Add</span></div>
+        <div class="tab" onclick="goTab('review')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" class="ti" fill="#78716C"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="tab-lbl">Review</span></div>
+        <div class="tab" onclick="goTab('matrix')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/></svg><span class="tab-lbl">Matrix</span></div>
+      </div>
+    </div>
+
+    <!-- ADD -->
+    <div class="screen" id="s-add">
+      <div class="add-header">
+        <div class="add-hrow"><div class="add-title">New Expression</div><button class="save-btn" id="save-btn" onclick="saveExpression()">Save ✓</button></div>
+        <div class="step-track">
+          <div class="step-dot cur" id="sd0"></div><div class="step-dot" id="sd1"></div><div class="step-dot" id="sd2"></div><div class="step-dot" id="sd3"></div>
+          <span class="step-label" id="step-lbl">Core Expression</span>
+        </div>
+      </div>
+      <div class="scroll">
+        <div class="of-banner"><div class="of-badge">추천</div><div class="of-text">Output First: Step 3에서 내 문장을 <em>먼저</em> 쓰고 예문을 확인하세요.</div></div>
+        <div class="step-panel cur" id="step0">
+          <div class="step-title">① 핵심 표현 입력</div>
+          <div class="step-sub">가장 기억하고 싶은 표현과 한국어+영어 의미를 입력하세요.</div>
+          <div class="fl"><div class="fl-lbl"><div class="fl-dot" style="background:var(--ink)"></div>Expression / Phrase</div><input class="fi" id="f-expr" type="text" placeholder="e.g. leverage one's strengths" autocomplete="off" autocorrect="off" spellcheck="false"></div>
+          <div class="fl"><div class="fl-lbl"><div class="fl-dot" style="background:var(--sage)"></div>Meaning</div><textarea class="fi fi-sm" id="f-meaning" rows="3" placeholder="Korean + English&#10;예) 강점을 최대한 활용하다 · to make effective use of one's best abilities"></textarea></div>
+          <div class="step-nav"><div></div><button class="step-btn step-next" onclick="goStep(1)">Context →</button></div>
+        </div>
+        <div class="step-panel" id="step1">
+          <div class="step-title">② 맥락 &amp; 예문</div>
+          <div class="step-sub">이 표현이 실제로 어떤 상황에서 쓰이나요?</div>
+          <div class="fl"><div class="fl-lbl"><div class="fl-dot" style="background:var(--blue)"></div>Example Sentence</div><textarea class="fi fi-sm" id="f-example" rows="3" placeholder="A natural example sentence..."></textarea></div>
+          <div class="fl"><div class="fl-lbl"><div class="fl-dot" style="background:var(--blue)"></div>Context &amp; Situation</div><textarea class="fi fi-sm" id="f-context" rows="2" placeholder="Formal? Casual? Interview? Academic?"></textarea></div>
+          <div class="row2">
+            <div class="fl" style="margin-bottom:0"><div class="fl-lbl" style="color:var(--blue)"><div class="fl-dot" style="background:var(--blue)"></div>Synonyms</div><textarea class="fi fi-sm" id="f-syn" rows="2" placeholder="similar words..." style="border-color:var(--blue-m)"></textarea></div>
+            <div class="fl" style="margin-bottom:0"><div class="fl-lbl" style="color:var(--red)"><div class="fl-dot" style="background:var(--red)"></div>Antonyms</div><textarea class="fi fi-sm" id="f-ant" rows="2" placeholder="opposites..." style="border-color:var(--red-m)"></textarea></div>
+          </div>
+          <div class="step-nav"><button class="step-btn step-prev" onclick="goStep(0)">← Core</button><button class="step-btn step-next" onclick="goStep(2)">Reflect →</button></div>
+        </div>
+        <div class="step-panel" id="step2">
+          <div class="step-title">③ 내 문장 먼저!</div>
+          <div class="step-sub">예문을 보기 전에, 이 표현으로 내 문장을 먼저 써보세요.</div>
+          <div class="of-challenge"><div class="of-challenge-lbl">✏️ Output First Challenge</div><div class="of-challenge-q">나의 실제 상황에 맞는 문장을 먼저 써보세요. (틀려도 OK!)</div></div>
+          <div class="fl"><div class="fl-lbl" style="color:var(--purple)"><div class="fl-dot" style="background:var(--purple)"></div>My Own Sentence</div><textarea class="fi fi-sm" id="f-own" rows="3" placeholder="내 삶과 연결된 문장으로 쓰세요.&#10;예) I need to leverage my coding skills when applying for internships." style="border-color:var(--purple-m)"></textarea></div>
+          <div class="fl"><div class="fl-lbl" style="color:var(--sage)"><div class="fl-dot" style="background:var(--sage)"></div>My Thoughts &amp; Reflection</div><textarea class="fi fi-sm" id="f-thoughts" rows="3" placeholder="이 표현이 나에게 왜 중요한가요? 언제 쓸 것 같나요?" style="border-color:var(--sage-m)"></textarea></div>
+          <div class="step-nav"><button class="step-btn step-prev" onclick="goStep(1)">← Context</button><button class="step-btn step-next" onclick="goStep(3)">Pronunciation →</button></div>
+        </div>
+        <div class="step-panel" id="step3">
+          <div class="step-title">④ 발음 기록 (선택)</div>
+          <div class="step-sub">IPA를 기록하거나 건너뛰고 바로 저장할 수 있어요.</div>
+          <div class="fl-lbl" style="margin-bottom:6px"><div class="fl-dot" style="background:var(--blue)"></div>IPA Notation</div>
+          <div class="ipa-disp" id="ipa-disp">/ _ /</div>
+          <div class="ipa-kb">
+            <div class="ipa-k" onclick="addIpa('ə')">ə</div><div class="ipa-k" onclick="addIpa('ɪ')">ɪ</div><div class="ipa-k" onclick="addIpa('æ')">æ</div><div class="ipa-k" onclick="addIpa('ʌ')">ʌ</div><div class="ipa-k" onclick="addIpa('ɔː')">ɔː</div><div class="ipa-k" onclick="addIpa('θ')">θ</div><div class="ipa-k" onclick="addIpa('ð')">ð</div><div class="ipa-k" onclick="addIpa('ʃ')">ʃ</div><div class="ipa-k" onclick="addIpa('ŋ')">ŋ</div><div class="ipa-k" onclick="addIpa('iː')">iː</div><div class="ipa-k" onclick="addIpa('uː')">uː</div><div class="ipa-k" onclick="addIpa('eɪ')">eɪ</div>
+          </div>
+          <div class="ipa-acts"><div class="ipa-act" onclick="clearIpa()">Clear</div><div class="ipa-act" onclick="backIpa()">⌫</div><div class="ipa-act prim">🔊 Play</div></div>
+          <div class="step-nav"><button class="step-btn step-prev" onclick="goStep(2)">← Reflect</button><button class="step-btn step-next" style="background:var(--sage)" onclick="saveExpression()">💾 Save Entry</button></div>
+        </div>
+        <div style="height:20px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab" onclick="goTab('journal')"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" class="ti" fill="#78716C"/><rect x="7" y="8" width="10" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="11.5" width="7" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="15" width="8.5" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Journal</span></div>
+        <div class="tab on" onclick="goTab('add')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" class="ti" fill="#3D6B4A"/><rect x="11.25" y="7" width="1.5" height="10" rx=".75" fill="#fff"/><rect x="7" y="11.25" width="10" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl" style="color:var(--sage)">Add</span></div>
+        <div class="tab" onclick="goTab('review')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" class="ti" fill="#78716C"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="tab-lbl">Review</span></div>
+        <div class="tab" onclick="goTab('matrix')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/></svg><span class="tab-lbl">Matrix</span></div>
+      </div>
+    </div>
+
+    <!-- REVIEW -->
+    <div class="screen" id="s-review">
+      <div class="review-hd">
+        <div class="review-hd-row"><div class="review-hd-title">Flashcard Review</div><div class="review-date-badge" id="rev-date-badge">—</div></div>
+        <div class="rev-prog-row"><div class="rev-prog-lbl" id="rev-prog-lbl">0/0</div><div class="rev-prog-track"><div class="rev-prog-fill" id="rev-prog-fill" style="width:0%"></div></div><div class="rev-prog-lbl" id="rev-pct" style="color:var(--sage);text-align:right">0%</div></div>
+        <div class="rev-dots" id="rev-dots"></div>
+      </div>
+      <div class="scroll">
+        <div class="flip-area">
+          <div class="flip-card" id="flip-card" onclick="flipCard()">
+            <div class="flip-inner" id="flip-inner">
+              <div class="flip-face">
+                <div class="flip-tag" id="fc-tag">Expression</div>
+                <div class="flip-word" id="fc-word">—</div>
+                <div class="flip-phon" id="fc-phon"></div>
+                <div style="flex:1"></div>
+                <div class="flip-hint">탭하면 의미가 보여요 ↺</div>
+              </div>
+              <div class="flip-face flip-back">
+                <div class="flip-tag">Meaning &amp; Context</div>
+                <div class="flip-sect-lbl">Meaning</div>
+                <div class="flip-meaning" id="fc-meaning">—</div>
+                <div class="flip-sect-lbl">Context</div>
+                <div class="flip-ctx" id="fc-ctx">—</div>
+                <div class="flip-own"><div class="flip-own-lbl">✏️ My Sentence</div><span id="fc-own">—</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="srs-insight" id="srs-insight" style="display:none"><strong>SRS 가이드:</strong> 의미를 확인한 뒤 얼마나 잘 기억했는지 솔직하게 평가하세요.</div>
+        <div class="srs-row">
+          <div class="srs-btn srs-hard" onclick="rateCard('hard')"><div class="srs-emoji">😓</div><div class="srs-lbl">Hard</div><div class="srs-sub">내일 복습</div></div>
+          <div class="srs-btn srs-ok" onclick="rateCard('ok')"><div class="srs-emoji">🤔</div><div class="srs-lbl">Good</div><div class="srs-sub">3일 후</div></div>
+          <div class="srs-btn srs-easy" onclick="rateCard('easy')"><div class="srs-emoji">✅</div><div class="srs-lbl">Easy</div><div class="srs-sub">7일 후</div></div>
+        </div>
+        <div style="margin:14px 16px 0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="sec-ttl">Up Next</div><div style="font-size:11px;font-weight:700;color:var(--ink3)" id="queue-count">—</div></div>
+          <div id="review-queue"></div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab" onclick="goTab('journal')"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" class="ti" fill="#78716C"/><rect x="7" y="8" width="10" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="11.5" width="7" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="15" width="8.5" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Journal</span></div>
+        <div class="tab" onclick="goTab('add')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" class="ti" fill="#78716C"/><rect x="11.25" y="7" width="1.5" height="10" rx=".75" fill="#fff"/><rect x="7" y="11.25" width="10" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Add</span></div>
+        <div class="tab on" onclick="goTab('review')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" class="ti" fill="#3D6B4A"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="tab-lbl" style="color:var(--sage)">Review</span></div>
+        <div class="tab" onclick="goTab('matrix')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#78716C"/></svg><span class="tab-lbl">Matrix</span></div>
+      </div>
+    </div>
+
+    <!-- MATRIX -->
+    <div class="screen" id="s-matrix">
+      <div class="mx-header"><div class="mx-title">Study Matrix</div><div class="mx-sub" id="mx-sub">All learning sessions</div></div>
+      <div class="scroll">
+        <div class="kpi-row">
+          <div class="kpi ks"><div class="kpi-n" id="kpi-expr">0</div><div class="kpi-l">Expressions</div></div>
+          <div class="kpi kb"><div class="kpi-n" id="kpi-days">0</div><div class="kpi-l">Days</div></div>
+          <div class="kpi kp"><div class="kpi-n" id="kpi-notes">0</div><div class="kpi-l">Notes</div></div>
+          <div class="kpi ka"><div class="kpi-n" id="kpi-streak2">🔥 0</div><div class="kpi-l">Streak</div></div>
+        </div>
+        <div class="filter-row"><div class="fc on">All</div><div class="fc">This Week</div><div class="fc">Reviewed</div><div class="fc">Pending</div></div>
+        <div class="mx-table-wrap"><table class="mx-table"><thead><tr><th style="width:58px">Date</th><th>Theme</th><th style="width:36px;text-align:center">Expr</th><th style="width:62px;text-align:center">Status</th></tr></thead><tbody id="mx-tbody"></tbody></table></div>
+        <div class="heat"><div class="heat-title">Activity Heatmap</div><div class="heat-grid" id="heat-grid"></div><div class="heat-lbls"><span class="heat-lbl">3W ago</span><span class="heat-lbl">2W ago</span><span class="heat-lbl">Last week</span><span class="heat-lbl">Today</span></div></div>
+        <div class="an-row">
+          <div class="an-card"><div class="an-ttl">Weekly Expressions</div><div class="minibars" id="mini-bars"></div><div style="font-size:9px;color:var(--ink4);margin-top:4px">Mon → Today</div></div>
+          <div class="an-card" style="display:flex;flex-direction:column;justify-content:center"><div class="an-ttl">Streak</div><div style="font-size:20px;margin-bottom:4px">🔥</div><div class="streak-n" id="streak-n2">0</div><div class="streak-l">days in a row</div></div>
+        </div>
+        <div style="height:16px"></div>
+      </div>
+      <div class="tabbar">
+        <div class="tab" onclick="goTab('journal')"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3" class="ti" fill="#78716C"/><rect x="7" y="8" width="10" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="11.5" width="7" height="1.5" rx=".75" fill="#fff"/><rect x="7" y="15" width="8.5" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Journal</span></div>
+        <div class="tab" onclick="goTab('add')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" class="ti" fill="#78716C"/><rect x="11.25" y="7" width="1.5" height="10" rx=".75" fill="#fff"/><rect x="7" y="11.25" width="10" height="1.5" rx=".75" fill="#fff"/></svg><span class="tab-lbl">Add</span></div>
+        <div class="tab" onclick="goTab('review')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3" class="ti" fill="#78716C"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg><span class="tab-lbl">Review</span></div>
+        <div class="tab on" onclick="goTab('matrix')"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#3D6B4A"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" class="ti" fill="#3D6B4A"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#3D6B4A"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" class="ti" fill="#3D6B4A"/></svg><span class="tab-lbl" style="color:var(--sage)">Matrix</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE_KEY='dej_pwa_v1';
+function load(){try{return JSON.parse(localStorage.getItem(STORE_KEY)||'[]')}catch{return[]}}
+function save(d){localStorage.setItem(STORE_KEY,JSON.stringify(d))}
+
+const today=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+const SAMPLE=[
+  {id:1,date:'Apr 10',theme:'Academic Writing',expression:'Furthermore',meaning:'게다가 · Used to add supporting information to a previous point',example:'Furthermore, the study revealed unexpected correlations.',context:'Formal academic writing, essays. Never casual speech.',synonyms:'Moreover, In addition',antonyms:'However, Nevertheless',thoughts:'논문 쓸 때 자주 써야 할 것 같다.',own:'Furthermore, I plan to apply for grad school in the fall.',ipa:'fɜːðəˈmɔː',reviewStatus:'reviewed',nextReview:Date.now()+7*86400000,interval:7},
+  {id:2,date:today,theme:'Resume & Interview',expression:"Leverage one's strengths",meaning:"강점을 최대한 활용하다 · To make effective use of one's best abilities",example:'I focused on leveraging my strengths in data analysis.',context:'Job interviews, resumes. Formal register.',synonyms:'Capitalize on, Make the most of',antonyms:'Underutilize, Squander',thoughts:'인터뷰에서 꼭 써보고 싶다.',own:'I want to leverage my UX design skills when applying to tech companies.',ipa:'ˈlɛvərɪdʒ wʌnz strɛŋθs',reviewStatus:'new',nextReview:Date.now()+86400000,interval:1},
+  {id:3,date:today,theme:'Resume & Interview',expression:'Proactive approach',meaning:'선제적 접근법 · Acting before problems arise rather than reacting',example:'I always take a proactive approach to project management.',context:'Workplace, interviews. Shows initiative and leadership.',synonyms:'Forward-thinking, Anticipatory',antonyms:'Reactive, Passive',thoughts:'적극적인 인상을 줄 때 쓸 것이다.',own:'Taking a proactive approach helped me finish the project early.',ipa:'prəʊˈæktɪv əˈprəʊtʃ',reviewStatus:'new',nextReview:Date.now()+86400000,interval:1}
+];
+
+let data=load();
+if(data.length===0){data=SAMPLE;save(data)}
+
+const TIPS=[
+  '<strong>Output First:</strong> 표현을 보기 전에 먼저 문장을 써보세요. 기억 효율이 2.5배 높아집니다.',
+  '<strong>아침 5분 복습:</strong> 새 표현을 추가하기 전에 Due된 플래시카드를 먼저 복습하세요.',
+  '<strong>My Sentence 팁:</strong> "She uses it"보다 "I will use it when..."으로 쓰면 기억에 훨씬 오래 남습니다.',
+  '<strong>하루 하나의 테마:</strong> 같은 맥락의 표현을 묶어 배우면 실제 사용 가능성이 3배 올라갑니다.',
+  '<strong>SRS 팁:</strong> 모르는 카드를 Easy로 표시하지 마세요. 솔직한 평가가 장기 기억의 핵심입니다.',
+];
+document.getElementById('daily-tip').innerHTML=TIPS[new Date().getDay()%TIPS.length];
+document.getElementById('hero-date').textContent='TODAY · '+today.toUpperCase()+', 2026';
+document.getElementById('journal-date-sub').textContent='Today · '+today+', 2026';
+document.getElementById('rev-date-badge').textContent=today;
+
+const tabs=['journal','add','review','matrix'];
+function goTab(name){
+  tabs.forEach(t=>document.getElementById('s-'+t).classList.remove('active'));
+  document.getElementById('s-'+name).classList.add('active');
+  if(name==='journal')renderJournal();
+  if(name==='review')renderReview();
+  if(name==='matrix')renderMatrix();
+}
+
+function getToday(){return new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+function calcStreak(){
+  const days=[...new Set(data.map(e=>e.date))];
+  if(!days.length)return 0;
+  let s=0;const now=new Date();
+  for(let i=0;i<60;i++){const d=new Date(now-i*86400000);const l=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});if(days.includes(l))s++;else if(i>0)break;}
+  return s;
+}
+
+function renderJournal(){
+  const t=getToday();
+  const tod=data.filter(e=>e.date===t);
+  document.getElementById('stat-expr').textContent=tod.length;
+  document.getElementById('stat-streak').textContent=calcStreak();
+  document.getElementById('stat-total').textContent=data.length;
+  const pct=Math.min(100,Math.round(tod.length/5*100));
+  document.getElementById('goal-fill').style.width=pct+'%';
+  document.getElementById('goal-pct').textContent=tod.length+'/5';
+  const list=document.getElementById('expr-list');
+  if(!data.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">📖</div><div class="empty-title">Your journal is empty</div><div class="empty-sub">첫 번째 표현을 추가해보세요.<br>Add 탭에서 4단계로 입력할 수 있어요.</div><button class="empty-btn" onclick="goTab('add')">+ 첫 표현 추가하기</button></div>`;return;}
+  list.innerHTML=data.slice().reverse().slice(0,5).map(e=>`<div class="expr-card"><div class="expr-word">${e.expression}</div><div class="expr-meaning">${e.meaning}</div>${e.own?`<div class="expr-eg">✏️ <mark>"${e.own}"</mark></div>`:''}<div class="expr-tags">${e.synonyms?`<span class="tag tb">≈ ${e.synonyms.split(',')[0].trim()}</span>`:''} ${e.antonyms?`<span class="tag tr">≠ ${e.antonyms.split(',')[0].trim()}</span>`:''} ${e.thoughts?`<span class="tag tg">💭 Reflection</span>`:''} ${e.own?`<span class="tag tp">✏️ My Sentence</span>`:''}</div></div>`).join('');
+}
+
+let curStep=0,ipaText='';
+const stepLabels=['Core Expression','Context & Usage','My Reflection','Pronunciation'];
+function goStep(n){
+  document.getElementById('step'+curStep).classList.remove('cur');
+  curStep=n;
+  document.getElementById('step'+curStep).classList.add('cur');
+  for(let i=0;i<4;i++){const d=document.getElementById('sd'+i);d.className='step-dot'+(i<n?' done':i===n?' cur':'');}
+  document.getElementById('step-lbl').textContent=stepLabels[n];
+  document.getElementById('save-btn').className='save-btn'+(n===3?' visible':'');
+  document.querySelector('#s-add .scroll').scrollTo(0,0);
+}
+function resetForm(){
+  ['f-expr','f-meaning','f-example','f-context','f-syn','f-ant','f-thoughts','f-own'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ipaText='';document.getElementById('ipa-disp').textContent='/ _ /';goStep(0);
+}
+function saveExpression(){
+  const expr=document.getElementById('f-expr').value.trim();
+  if(!expr){showToast('Expression을 입력해주세요 ✏️');goStep(0);return;}
+  data.push({id:Date.now(),date:getToday(),theme:'오늘의 테마',expression:expr,meaning:document.getElementById('f-meaning').value.trim(),example:document.getElementById('f-example').value.trim(),context:document.getElementById('f-context').value.trim(),synonyms:document.getElementById('f-syn').value.trim(),antonyms:document.getElementById('f-ant').value.trim(),thoughts:document.getElementById('f-thoughts').value.trim(),own:document.getElementById('f-own').value.trim(),ipa:ipaText,reviewStatus:'new',nextReview:Date.now()+86400000,interval:1});
+  save(data);showToast('✓ Saved — '+expr);resetForm();setTimeout(()=>goTab('journal'),300);
+}
+function addIpa(c){ipaText+=c;document.getElementById('ipa-disp').textContent='/ '+ipaText+' /'}
+function clearIpa(){ipaText='';document.getElementById('ipa-disp').textContent='/ _ /'}
+function backIpa(){ipaText=ipaText.slice(0,-1);document.getElementById('ipa-disp').textContent=ipaText?'/ '+ipaText+' /':'/ _ /'}
+
+let revIdx=0,revList=[],isFlipped=false;
+function renderReview(){revList=data.slice().reverse();revIdx=0;isFlipped=false;updateRevCard();renderQueue();}
+function updateRevCard(){
+  const card=revList[revIdx];
+  if(!card){document.getElementById('fc-word').textContent='All done! 🎉';document.getElementById('fc-meaning').textContent='';document.getElementById('fc-ctx').textContent='';document.getElementById('fc-own').textContent='';return;}
+  document.getElementById('fc-tag').textContent=(card.theme||'Expression')+' · '+card.date;
+  document.getElementById('fc-word').textContent=card.expression;
+  document.getElementById('fc-phon').textContent=card.ipa?'/ '+card.ipa+' /':'';
+  document.getElementById('fc-meaning').textContent=card.meaning||'—';
+  document.getElementById('fc-ctx').textContent=card.context||card.example||'—';
+  document.getElementById('fc-own').textContent=card.own||'(Add a personal sentence next time!)';
+  document.getElementById('rev-prog-lbl').textContent=(revIdx+1)+'/'+revList.length;
+  const pct=Math.round((revIdx/Math.max(1,revList.length))*100);
+  document.getElementById('rev-prog-fill').style.width=pct+'%';
+  document.getElementById('rev-pct').textContent=pct+'%';
+  document.getElementById('queue-count').textContent=(revList.length-revIdx-1)+' remaining';
+  const show=Math.min(revList.length,7);
+  document.getElementById('rev-dots').innerHTML=Array.from({length:show},(_,i)=>`<div class="rd ${i<revIdx?'done':i===revIdx?'cur':''}"></div>`).join('');
+  if(isFlipped){document.getElementById('flip-inner').style.transform='';isFlipped=false;}
+  document.getElementById('srs-insight').style.display='none';
+}
+function flipCard(){isFlipped=!isFlipped;document.getElementById('flip-inner').style.transform=isFlipped?'rotateY(180deg)':'';if(isFlipped)document.getElementById('srs-insight').style.display='block';}
+function rateCard(r){
+  if(revIdx>=revList.length)return;
+  const iv={hard:1,ok:3,easy:7};
+  const card=data.find(e=>e.id===revList[revIdx].id);
+  if(card){card.reviewStatus='reviewed';card.interval=iv[r];card.nextReview=Date.now()+iv[r]*86400000;save(data);}
+  revIdx++;isFlipped=false;updateRevCard();renderQueue();
+  showToast(r==='easy'?'✅ Easy · 7일 후':r==='ok'?'🤔 Good · 3일 후':'😓 Hard · 내일');
+}
+function renderQueue(){
+  const q=revList.slice(revIdx+1,revIdx+5);
+  document.getElementById('review-queue').innerHTML=q.map((e,i)=>{const due=e.reviewStatus==='reviewed'?'qd-ok':i===0?'qd-now':'qd-later';const lbl=e.reviewStatus==='reviewed'?'Reviewed':i===0?'Next':'Queued';return`<div class="q-card"><div class="q-num">${revIdx+i+2}</div><div class="q-word">${e.expression}</div><span class="q-due ${due}">${lbl}</span></div>`}).join('')||'<div style="text-align:center;padding:16px;font-size:12px;color:var(--ink4);font-weight:600">All reviewed! 🎉</div>';
+}
+
+function renderMatrix(){
+  const total=data.length,days=[...new Set(data.map(e=>e.date))].length,notes=data.filter(e=>e.thoughts||e.own).length,streak=calcStreak();
+  document.getElementById('kpi-expr').textContent=total;document.getElementById('kpi-days').textContent=days;document.getElementById('kpi-notes').textContent=notes;document.getElementById('kpi-streak2').textContent='🔥 '+streak;document.getElementById('streak-n2').textContent=streak;
+  document.getElementById('mx-sub').textContent=total+' expressions · '+days+' study days';
+  const byDate={};data.forEach(e=>{if(!byDate[e.date])byDate[e.date]={theme:e.theme,count:0,reviewed:0};byDate[e.date].count++;if(e.reviewStatus==='reviewed')byDate[e.date].reviewed++;});
+  document.getElementById('mx-tbody').innerHTML=Object.entries(byDate).reverse().map(([date,info])=>{const all=info.reviewed===info.count&&info.count>0;const none=info.reviewed===0;const sc=all?'rs-done':none?'rs-new':'rs-pend';const sl=all?'✓ Done':none?'New':'Partial';const isTod=date===getToday();return`<tr><td><div class="mx-date">${date}</div>${isTod?'<div class="mx-today">Today</div>':''}</td><td><div class="mx-theme">${info.theme}</div></td><td style="text-align:center"><div class="mx-count">${info.count}</div></td><td style="text-align:center"><span class="rs ${sc}">${sl}</span></td></tr>`}).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--ink4);font-size:12px">No data yet</td></tr>';
+  const now=Date.now();document.getElementById('heat-grid').innerHTML=Array.from({length:28},(_,i)=>{const d=new Date(now-(27-i)*86400000);const lbl=d.toLocaleDateString('en-US',{month:'short',day:'numeric'});const cnt=data.filter(e=>e.date===lbl).length;const cls=cnt===0?'':cnt<=2?'h1':cnt<=4?'h2':cnt<=6?'h3':'h4';return`<div class="hc ${cls}"></div>`}).join('');
+  document.getElementById('mini-bars').innerHTML=[60,80,45,100,70,90,Math.min(100,Math.round(data.filter(e=>e.date===getToday()).length/5*100+10))].map((h,i)=>`<div class="mb${i===6?' today':''}" style="height:${Math.max(8,h)}%"></div>`).join('');
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+function toggleRec(header){const b=header.nextElementSibling,c=header.querySelector('.rec-chevron');b.classList.toggle('open');c.style.transform=b.classList.contains('open')?'rotate(90deg)':'';}
+document.querySelectorAll('.fc').forEach(f=>f.addEventListener('click',function(){document.querySelectorAll('.fc').forEach(x=>x.classList.remove('on'));this.classList.add('on');}));
+
+renderJournal();
+</script>
+</body>
+</html>
